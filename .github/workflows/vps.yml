@@ -7,12 +7,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Cài đặt môi trường
+      - name: Setup SSH
         run: |
           sudo apt update
           sudo apt install -y openssh-server wget
           sudo service ssh start
+          # tạo user vps và set pass
+          sudo useradd -m -s /bin/bash vps
           echo "vps:vpspass" | sudo chpasswd
+          # bật login bằng password
           sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
           sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
           sudo systemctl restart ssh
@@ -33,3 +36,8 @@ jobs:
           echo "User: vps"
           echo "Pass: vpspass"
           echo "===================="
+
+      - name: Giữ VPS chạy
+        run: |
+          echo "VPS đang chạy... không tắt job."
+          sleep infinity
