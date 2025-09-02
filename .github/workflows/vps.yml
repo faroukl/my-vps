@@ -1,22 +1,28 @@
-name: VPS Ubuntu Free
+name: VPS Ubuntu
 
 on:
-  workflow_dispatch:   # Bấm nút "Run workflow" để khởi chạy
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Cài đặt môi trường & SSH
+      - name: Cài SSH
         run: |
-          sudo apt update -y
+          sudo apt update
           sudo apt install -y openssh-server
-          sudo service ssh start
           echo "root:123456" | sudo chpasswd
           sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-          sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo service ssh restart
-          echo "✅ VPS Ubuntu đã sẵn sàng. User: root / Pass: 123456"
+          sudo systemctl restart ssh
 
-      - name: Mở kết nối SSH qua tmate
-        uses: mxschmitt/action-tmate@v3
+      - name: Tải cloudflared
+        run: |
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
+
+      - name: Mở Tunnel free
+        run: |
+          cloudflared tunnel --url ssh://localhost:22 > tunnel.log 2>&1 &
+          sleep 10
+          cat tunnel.log | grep "trycloudflare.com"
