@@ -1,34 +1,32 @@
-name: vps-serveo
+name: VPS via Serveo
 
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Update & Install
-      run: |
-        sudo apt update -y
-        sudo apt install -y openssh-server wget
+      - name: Update & install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-server wget
 
-    - name: Start SSH Server
-      run: |
-        sudo mkdir -p /var/run/sshd
-        echo 'runner:runner' | sudo chpasswd
-        sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        sudo service ssh start
+      - name: Start SSH server
+        run: |
+          sudo mkdir -p /var/run/sshd
+          sudo service ssh start
 
-    - name: Expose SSH with Serveo
-      run: |
-        ssh -o StrictHostKeyChecking=no -R 0:localhost:22 serveo.net > serveo.log 2>&1 &
-        sleep 8
-        echo "==== SERVEO LINK ===="
-        cat serveo.log | grep -o "ssh -p [0-9]* .*@serveo.net" | head -n 1
-        echo "====================="
+      - name: Expose SSH with Serveo
+        run: |
+          nohup ssh -o StrictHostKeyChecking=no -R 0:localhost:22 serveo.net > serveo.log 2>&1 &
+          sleep 10
+          echo "==== SERVEO LINK ===="
+          cat serveo.log
+          echo "====================="
 
-    - name: Keep job alive
-      run: |
-        echo "VPS is running... (max ~6h until GitHub auto stop)"
-        sleep 21600
+      - name: Keep job alive
+        run: |
+          echo "VPS is running... (max ~6h until GitHub auto stop)"
+          while true; do sleep 60; done
