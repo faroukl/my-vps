@@ -20,12 +20,16 @@ jobs:
         run: |
           sudo npm install -g localtunnel
 
+      - name: Set root password
+        run: |
+          echo "root:123456" | sudo chpasswd
+
       - name: Expose SSH with LocalTunnel
         run: |
           lt --port 22 --subdomain githubvps > lt.log 2>&1 &
           sleep 5
           echo "==== LOCALTUNNEL LINK ===="
-          cat lt.log
+          grep -o 'https://.*.loca.lt' lt.log || true
 
       - name: Keep job alive
         run: |
