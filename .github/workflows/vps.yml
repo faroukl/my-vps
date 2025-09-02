@@ -1,32 +1,33 @@
-name: VPS via Serveo
+name: Ubuntu VPS with LocalTunnel
 
-on:
-  workflow_dispatch:
-  push:
+on: workflow_dispatch
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Update & install deps
+      - name: Update & install packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-server wget
+          sudo apt update -y
+          sudo apt install -y openssh-server nodejs npm
 
       - name: Start SSH server
         run: |
           sudo mkdir -p /var/run/sshd
-          sudo service ssh start
+          sudo /usr/sbin/sshd -D &
 
-      - name: Expose SSH with Serveo
+      - name: Install LocalTunnel
         run: |
-          nohup ssh -o StrictHostKeyChecking=no -R 0:localhost:22 serveo.net > serveo.log 2>&1 &
-          sleep 10
-          echo "==== SERVEO LINK ===="
-          cat serveo.log
-          echo "====================="
+          sudo npm install -g localtunnel
+
+      - name: Expose SSH with LocalTunnel
+        run: |
+          lt --port 22 --subdomain githubvps > lt.log 2>&1 &
+          sleep 5
+          echo "==== LOCALTUNNEL LINK ===="
+          cat lt.log
 
       - name: Keep job alive
         run: |
           echo "VPS is running... (max ~6h until GitHub auto stop)"
-          while true; do sleep 60; done
+          while true; do sleep 300; done
