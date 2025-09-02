@@ -1,31 +1,32 @@
-name: VPS-Ubuntu
+name: VPS FullSpeed
 
-on: 
-  workflow_dispatch:   # Cho phép bấm nút Run workflow thủ công
+on:
+  workflow_dispatch:
 
 jobs:
-  build:
+  vps:
     runs-on: ubuntu-latest
+    timeout-minutes: 360   # tối đa 6 giờ (GitHub Actions giới hạn runner)
+
     steps:
-      - name: Cập nhật hệ thống
+      - name: Thông tin hệ thống
         run: |
-          sudo apt update -y
-          sudo apt upgrade -y
+          uname -a
+          lsb_release -a || true
+          df -h
+          free -h
+          nproc
+          echo ">>> Tốc độ mạng trung bình:"
+          sudo apt-get update && sudo apt-get install -y speedtest-cli
+          speedtest-cli --secure || true
 
       - name: Cài tmate
         run: |
-          sudo apt install -y tmate
-
-      - name: Tạo session tmate
-        run: |
-          tmate -S /tmp/tmate.sock new-session -d
+          sudo apt-get install -y tmate
+          tmate -S /tmp/tmate.sock new-session -d "bash -l"
           tmate -S /tmp/tmate.sock wait tmate-ready
-          echo "===== SSH command ====="
-          tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
-          echo "===== Web URL ====="
-          tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
-
-      - name: Keep alive
-        run: |
-          echo "Giữ VPS sống, nhấn Stop workflow để tắt."
-          while true; do sleep 30; done
+          echo "SSH: $(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')" | tee -a $GITHUB_STEP_SUMMARY
+          echo "WEB: $(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')" | tee -a $GITHUB_STEP_SUMMARY
+          echo ">>> VPS sẽ chạy đến khi job kết thúc hoặc hết 360 phút."
+          # Giữ phiên chạy liên tục cho tới khi timeout-minutes kết thúc
+          tail -f /dev/null
