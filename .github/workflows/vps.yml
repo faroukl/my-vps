@@ -6,21 +6,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-    - name: Setup SSH
-      run: |
-        sudo apt update
-        sudo apt install -y openssh-server
-        sudo systemctl enable ssh
-        sudo systemctl start ssh
-        echo "root:123456" | sudo chpasswd
-        sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-        sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        sudo systemctl restart ssh
 
-    - name: Setup tmate (SSH link)
+    steps:
+    - name: Cài tmate
       run: |
-        sudo apt install -y tmate
-        tmate -F new-session -d
-        tmate display -p '#{tmate_ssh}' > ssh.txt
-        cat ssh.txt
+        sudo apt-get update
+        sudo apt-get install -y tmate
+
+    - name: Tạo VPS qua tmate
+      run: |
+        # tạo session chạy ngầm
+        tmate -S /tmp/tmate.sock new-session -d
+        # đợi session sẵn sàng
+        tmate -S /tmp/tmate.sock wait tmate-ready
+        # in ra SSH + Web URL để kết nối
+        echo "===== SSH command ====="
+        tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
+        echo "===== Web URL ====="
+        tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
+        # giữ VPS chạy vô hạn (max 6h cho free)
+        sleep infinity
