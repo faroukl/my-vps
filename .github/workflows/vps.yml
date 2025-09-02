@@ -31,6 +31,13 @@ jobs:
           
       - name: Expose SSH with ngrok
         run: |
-          nohup ngrok tcp 22 --region ap > /dev/null 2>&1 &
-          sleep 8
-          curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+          nohup ngrok tcp 22 --region ap --log=stdout > ngrok.log &
+          sleep 10
+          echo "==== NGROK LINK ===="
+          cat ngrok.log | grep -o "tcp://[0-9a-zA-Z\.:\-]*"
+          echo "===================="
+          
+      - name: Keep job alive
+        run: |
+          echo "VPS is running... will keep alive until GitHub kills the job (max ~6h)"
+          while true; do sleep 60; done
