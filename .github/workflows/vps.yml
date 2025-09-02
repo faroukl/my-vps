@@ -23,18 +23,21 @@ jobs:
       - name: Cài Cloudflared
         run: |
           wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb || sudo apt -f install -y
 
-      - name: Mở tunnel SSH
+      - name: Mở tunnel SSH qua Cloudflare
         run: |
           nohup cloudflared tunnel --url tcp://localhost:22 --protocol tcp > tunnel.log 2>&1 &
           sleep 15
-          grep -Eo "tcp://[0-9a-zA-Z.-]+:[0-9]+" tunnel.log | tail -n 1 > cf.txt
+          TUNNEL_URL=$(grep -Eo "tcp://[0-9a-zA-Z.-]+:[0-9]+" tunnel.log | tail -n 1)
+          HOST=$(echo $TUNNEL_URL | cut -d: -f2 | sed 's#//##')
+          PORT=$(echo $TUNNEL_URL | cut -d: -f3)
           echo "===== SSH INFO ====="
-          echo "Host: $(cut -d: -f2 cf.txt | sed 's#//##')"
-          echo "Port: $(cut -d: -f3 cf.txt)"
+          echo "Host: $HOST"
+          echo "Port: $PORT"
           echo "User: vps"
           echo "Pass: vpspass"
+          echo "SSH Command: ssh vps@$HOST -p $PORT"
           echo "===================="
 
       - name: Giữ VPS chạy
