@@ -6,27 +6,36 @@ on:
 jobs:
   vps:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # tối đa 6 giờ (GitHub Actions giới hạn runner)
+    timeout-minutes: 360   # tối đa 6 giờ (giới hạn GitHub Actions)
 
     steps:
       - name: Thông tin hệ thống
         run: |
+          echo ">>> Kiểm tra thông tin VPS:"
           uname -a
           lsb_release -a || true
           df -h
           free -h
           nproc
+          echo
           echo ">>> Tốc độ mạng trung bình:"
-          sudo apt-get update && sudo apt-get install -y speedtest-cli
+          sudo apt-get update -y
+          sudo apt-get install -y speedtest-cli
           speedtest-cli --secure || true
 
-      - name: Cài tmate
+      - name: Cài tmate và tạo SSH session
         run: |
+          echo ">>> Cài đặt tmate..."
           sudo apt-get install -y tmate
+          echo ">>> Khởi tạo session..."
           tmate -S /tmp/tmate.sock new-session -d "bash -l"
           tmate -S /tmp/tmate.sock wait tmate-ready
           echo "SSH: $(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')" | tee -a $GITHUB_STEP_SUMMARY
           echo "WEB: $(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')" | tee -a $GITHUB_STEP_SUMMARY
+          echo ">>> VPS đã sẵn sàng. Dùng SSH hoặc Web link để kết nối."
           echo ">>> VPS sẽ chạy đến khi job kết thúc hoặc hết 360 phút."
-          # Giữ phiên chạy liên tục cho tới khi timeout-minutes kết thúc
+
+      - name: Giữ VPS online
+        run: |
+          echo ">>> Giữ VPS chạy liên tục..."
           tail -f /dev/null
