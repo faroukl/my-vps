@@ -1,4 +1,4 @@
-name: Ubuntu VPS with LocalTunnel
+name: Ubuntu VPS with Serveo
 
 on: workflow_dispatch
 
@@ -9,32 +9,30 @@ jobs:
       - name: Update & install packages
         run: |
           sudo apt update -y
-          sudo apt install -y openssh-server nodejs npm
+          sudo apt install -y openssh-server
 
       - name: Configure SSH
         run: |
           echo "root:123456" | sudo chpasswd
           sudo sed -i 's/^#\?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
           sudo sed -i 's/^#\?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo systemctl restart ssh || sudo service ssh restart
+          sudo service ssh restart
 
       - name: Start SSH server
         run: |
           sudo mkdir -p /var/run/sshd
           sudo /usr/sbin/sshd -D &
 
-      - name: Install LocalTunnel
+      - name: Expose SSH with Serveo
         run: |
-          sudo npm install -g localtunnel
-
-      - name: Expose SSH with LocalTunnel
-        run: |
-          lt --port 22 --subdomain githubvps > lt.log 2>&1 &
-          sleep 5
-          echo "==== LOCALTUNNEL LINK ===="
-          grep -o 'https://.*.loca.lt' lt.log || true
-          echo "==== SSH CONNECT ===="
-          echo "ssh root@githubvps.loca.lt -p 22"
+          ssh -o StrictHostKeyChecking=no -R 0:localhost:22 serveo.net > serveo.log 2>&1 &
+          sleep 10
+          echo "==== SERVEO RAW LOG ===="
+          cat serveo.log
+          echo "==== SSH COMMAND ===="
+          PORT=$(grep -o 'serveo.net:[0-9]*' serveo.log | sed 's/.*://')
+          echo "ssh root@serveo.net -p $PORT"
+          echo "Password: 123456"
 
       - name: Keep job alive
         run: |
