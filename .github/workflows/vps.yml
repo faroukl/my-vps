@@ -25,4 +25,8 @@ jobs:
         run: |
           cloudflared tunnel --url ssh://localhost:22 > tunnel.log 2>&1 &
           sleep 10
-          cat tunnel.log | grep "trycloudflare.com"
+          echo "====================================="
+          echo "👉 Copy domain dưới đây để SSH:"
+          cat tunnel.log | grep -o "https://[0-9a-zA-Z.-]*trycloudflare.com"
+          echo "====================================="
+          sleep 999999
