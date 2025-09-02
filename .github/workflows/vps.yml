@@ -8,23 +8,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up job
-        run: echo "Start VPS Ubuntu with ngrok SSH"
+      - name: Setup job
+        run: echo "Start VPS Ubuntu with Cloudflared SSH"
 
       - name: Update & Install
         run: |
           sudo apt update -y
-          sudo apt install -y openssh-server curl wget unzip tar
-
-      - name: Setup ngrok
-        run: |
-          curl -s https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o ngrok.tgz
-          tar -xvzf ngrok.tgz
-          chmod +x ngrok
-          sudo mv ngrok /usr/local/bin/ngrok
-
-      - name: Auth ngrok
-        run: ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          sudo apt install -y openssh-server wget
 
       - name: Start SSH Server
         run: |
@@ -34,15 +24,20 @@ jobs:
           sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
           sudo service ssh start
 
-      - name: Expose SSH with ngrok
+      - name: Install cloudflared
         run: |
-          ngrok tcp 22 --region ap --log=stdout > ngrok.log &
+          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb
+
+      - name: Expose SSH with Cloudflared
+        run: |
+          cloudflared tunnel --url tcp://localhost:22 --no-autoupdate > cloudflared.log 2>&1 &
           sleep 15
-          echo "==== NGROK LINK ===="
-          cat ngrok.log | grep -o "tcp://[0-9a-zA-Z\.:\-]*" | head -n 1
-          echo "===================="
+          echo "==== CLOUDFLARED LINK ===="
+          cat cloudflared.log | grep -o "tcp://[0-9a-zA-Z\.:\-]*" | head -n 1
+          echo "=========================="
 
       - name: Keep job alive
         run: |
-          echo "VPS is running... will keep alive until GitHub kills the job (max ~6h)"
+          echo "VPS is running... (max ~6h until GitHub auto stop)"
           sleep 21600
