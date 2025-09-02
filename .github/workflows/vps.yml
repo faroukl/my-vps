@@ -1,36 +1,38 @@
-name: VPS-Ubuntu-CF
+name: VPS-Ubuntu
 
-on:
-  workflow_dispatch:
+on: 
+  workflow_dispatch: # chạy bằng tay
+  push:              # chạy khi push code
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
 
     steps:
-    - name: Cài SSH server & user
+    - name: Cài đặt môi trường
       run: |
-        sudo apt-get update
-        sudo apt-get install -y openssh-server
-        sudo service ssh start
-        sudo useradd -m vps -s /bin/bash
-        echo 'vps:vpspass' | sudo chpasswd
-        echo "PermitRootLogin yes" | sudo tee -a /etc/ssh/sshd_config
-        sudo service ssh restart
+        sudo apt update -y
+        sudo apt install -y openssh-server wget unzip
 
-    - name: Cài đặt cloudflared
+        # Tạo user
+        sudo useradd -m vps
+        echo 'vps:vpspass' | sudo chpasswd
+        sudo service ssh start
+
+    - name: Cài Cloudflare Tunnel
       run: |
         wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
         sudo dpkg -i cloudflared-linux-amd64.deb
 
-    - name: Chạy tunnel & giữ VPS
+    - name: Mở tunnel SSH
       run: |
-        # Tạo quick tunnel và log ra file
-        cloudflared tunnel --no-autoupdate --url tcp://localhost:22 --logfile tunnel.log &
-        sleep 20
-        echo "==== Thông tin tunnel (dùng để SSH) ===="
-        grep -o "tcp://[0-9a-zA-Z.:-]*trycloudflare.com:[0-9]*" tunnel.log || true
-        echo "========================================"
-        # Giữ VPS sống
-        tail -f /dev/null
+        cloudflared tunnel --url tcp://localhost:22 --protocol tcp > tunnel.log 2>&1 &
+
+        # Chờ tunnel khởi tạo
+        sleep 10
+
+        # In ra thông tin SSH
+        grep -E "tcp://.*:.*" tunnel.log || true
+        echo "User: vps"
+        echo "Pass: vpspass"
