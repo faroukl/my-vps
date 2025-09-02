@@ -1,38 +1,35 @@
 name: VPS-Ubuntu
 
-on: 
-  workflow_dispatch: # chạy bằng tay
-  push:              # chạy khi push code
-    branches: [ main ]
+on:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Cài đặt môi trường
-      run: |
-        sudo apt update -y
-        sudo apt install -y openssh-server wget unzip
+      - name: Cài đặt môi trường
+        run: |
+          sudo apt update
+          sudo apt install -y openssh-server wget
+          sudo service ssh start
+          echo "vps:vpspass" | sudo chpasswd
+          sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo systemctl restart ssh
 
-        # Tạo user
-        sudo useradd -m vps
-        echo 'vps:vpspass' | sudo chpasswd
-        sudo service ssh start
+      - name: Cài Cloudflared
+        run: |
+          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb
 
-    - name: Cài Cloudflare Tunnel
-      run: |
-        wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-        sudo dpkg -i cloudflared-linux-amd64.deb
-
-    - name: Mở tunnel SSH
-      run: |
-        cloudflared tunnel --url tcp://localhost:22 --protocol tcp > tunnel.log 2>&1 &
-
-        # Chờ tunnel khởi tạo
-        sleep 10
-
-        # In ra thông tin SSH
-        grep -E "tcp://.*:.*" tunnel.log || true
-        echo "User: vps"
-        echo "Pass: vpspass"
+      - name: Mở tunnel SSH
+        run: |
+          nohup cloudflared tunnel --url tcp://localhost:22 --protocol tcp > tunnel.log 2>&1 &
+          sleep 15
+          grep -Eo "tcp://[0-9a-zA-Z.-]+:[0-9]+" tunnel.log | tail -n 1 > cf.txt
+          echo "===== SSH INFO ====="
+          echo "Host: $(cut -d: -f2 cf.txt | sed 's#//##')"
+          echo "Port: $(cut -d: -f3 cf.txt)"
+          echo "User: vps"
+          echo "Pass: vpspass"
+          echo "===================="
