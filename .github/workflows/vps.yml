@@ -1,4 +1,4 @@
-name: VPS Ubuntu
+name: VPS Ubuntu Free
 
 on:
   workflow_dispatch:
@@ -7,26 +7,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Cài SSH
-        run: |
-          sudo apt update
-          sudo apt install -y openssh-server
-          echo "root:123456" | sudo chpasswd
-          sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-          sudo systemctl restart ssh
+    - name: Setup SSH
+      run: |
+        sudo apt update
+        sudo apt install -y openssh-server
+        sudo systemctl enable ssh
+        sudo systemctl start ssh
+        echo "root:123456" | sudo chpasswd
+        sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+        sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sudo systemctl restart ssh
 
-      - name: Tải cloudflared
-        run: |
-          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
-          chmod +x cloudflared
-          sudo mv cloudflared /usr/local/bin/
-
-      - name: Mở Tunnel TCP free
-        run: |
-          cloudflared tunnel --protocol tcp --url localhost:22 > tunnel.log 2>&1 &
-          sleep 10
-          echo "====================================="
-          echo "👉 Copy host + port dưới đây để SSH:"
-          cat tunnel.log | grep -Eo "tcp://[0-9a-zA-Z.-]+:[0-9]+"
-          echo "====================================="
-          sleep 999999
+    - name: Setup tmate (SSH link)
+      run: |
+        sudo apt install -y tmate
+        tmate -F new-session -d
+        tmate display -p '#{tmate_ssh}' > ssh.txt
+        cat ssh.txt
