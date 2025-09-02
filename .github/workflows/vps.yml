@@ -1,47 +1,17 @@
-name: VPS-Ubuntu
+name: Run My Tool
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  run:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SSH
-        run: |
-          sudo apt update
-          sudo apt install -y openssh-server wget
-          sudo service ssh start
-          # tạo user vps và set pass
-          sudo useradd -m -s /bin/bash vps
-          echo "vps:vpspass" | sudo chpasswd
-          # bật login bằng password
-          sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo systemctl restart ssh
+      - name: Checkout source
+        uses: actions/checkout@v3
 
-      - name: Cài Cloudflared
-        run: |
-          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared-linux-amd64.deb
+      - name: Cấp quyền chạy cho file
+        run: chmod +x ./bot
 
-      - name: Mở tunnel SSH qua Cloudflare
-        run: |
-          nohup cloudflared tunnel --url tcp://localhost:22 --protocol tcp > tunnel.log 2>&1 &
-          sleep 15
-          cat tunnel.log
-          # lấy domain public
-          HOST=$(grep -oP "tcp://\K[^:]+(?=:)" tunnel.log | tail -n 1)
-          PORT=$(grep -oP "tcp://[^:]+:\K[0-9]+" tunnel.log | tail -n 1)
-          echo "===== SSH INFO ====="
-          echo "Host: $HOST"
-          echo "Port: $PORT"
-          echo "User: vps"
-          echo "Pass: vpspass"
-          echo "SSH Command: ssh vps@$HOST -p $PORT"
-          echo "===================="
-
-      - name: Giữ VPS chạy
-        run: |
-          echo "VPS đang chạy... không tắt job."
-          sleep infinity
+      - name: Chạy file
+        run: ./bot
