@@ -1,0 +1,22 @@
+name: VPS Ubuntu Free
+
+on:
+  workflow_dispatch:   # Bấm nút "Run workflow" để khởi chạy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cài đặt môi trường & SSH
+        run: |
+          sudo apt update -y
+          sudo apt install -y openssh-server
+          sudo service ssh start
+          echo "root:123456" | sudo chpasswd
+          sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo service ssh restart
+          echo "✅ VPS Ubuntu đã sẵn sàng. User: root / Pass: 123456"
+
+      - name: Mở kết nối SSH qua tmate
+        uses: mxschmitt/action-tmate@v3
