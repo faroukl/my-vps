@@ -31,10 +31,10 @@ jobs:
 
       - name: Expose SSH with Cloudflared
         run: |
-          cloudflared tunnel --url tcp://localhost:22 --no-autoupdate > cloudflared.log 2>&1 &
-          sleep 15
+          cloudflared tunnel --url tcp://localhost:22 --no-autoupdate > /tmp/cloudflared.log 2>&1 &
+          sleep 10
           echo "==== CLOUDFLARED LINK ===="
-          cat cloudflared.log | grep -o "tcp://[0-9a-zA-Z\.:\-]*" | head -n 1
+          grep -o "tcp://[0-9a-zA-Z\.:\-]*" /tmp/cloudflared.log | head -n 1
           echo "=========================="
 
       - name: Keep job alive
