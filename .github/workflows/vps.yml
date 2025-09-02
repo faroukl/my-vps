@@ -9,7 +9,7 @@ jobs:
       - name: Update & Install
         run: |
           sudo apt update -y
-          sudo apt install wget unzip -y
+          sudo apt install wget unzip curl jq -y
           
       - name: Setup ngrok
         run: |
@@ -22,12 +22,15 @@ jobs:
         
       - name: Start SSH Server
         run: |
-          sudo apt install openssh-server -y
-          sudo service ssh start
+          sudo apt install -y openssh-server
+          sudo systemctl enable ssh
+          sudo systemctl start ssh
           echo "root:123456" | sudo chpasswd
+          sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo systemctl restart ssh
           
-      - name: Expose with ngrok
+      - name: Expose SSH with ngrok
         run: |
-          nohup ngrok tcp 22 --region ap > ngrok.log &
-          sleep 10
-          grep "tcp://" ngrok.log
+          nohup ngrok tcp 22 --region ap > /dev/null 2>&1 &
+          sleep 8
+          curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
