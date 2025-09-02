@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # tối đa 6 giờ
+    timeout-minutes: 360
 
     steps:
     - name: Cài SSH server & user
@@ -26,12 +26,11 @@ jobs:
 
     - name: Chạy tunnel & giữ VPS
       run: |
-        # Tạo tunnel TCP cho SSH
-        cloudflared tunnel --no-autoupdate --url tcp://localhost:22 > tunnel.log 2>&1 &
-        sleep 10
-        echo "==== Thông tin tunnel ===="
-        grep -o "tcp://[0-9a-zA-Z.:]*" tunnel.log || true
-        echo "=========================="
-
-        # Giữ job sống tới khi hết 6h
+        # Tạo quick tunnel và log ra file
+        cloudflared tunnel --no-autoupdate --url tcp://localhost:22 --logfile tunnel.log &
+        sleep 20
+        echo "==== Thông tin tunnel (dùng để SSH) ===="
+        grep -o "tcp://[0-9a-zA-Z.:-]*trycloudflare.com:[0-9]*" tunnel.log || true
+        echo "========================================"
+        # Giữ VPS sống
         tail -f /dev/null
