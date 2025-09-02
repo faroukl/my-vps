@@ -9,7 +9,7 @@ jobs:
       - name: Update & Install
         run: |
           sudo apt update -y
-          sudo apt install wget unzip curl jq -y
+          sudo apt install wget unzip curl jq tmux -y
           
       - name: Setup ngrok
         run: |
@@ -31,10 +31,10 @@ jobs:
           
       - name: Expose SSH with ngrok
         run: |
-          nohup ngrok tcp 22 --region ap --log=stdout > ngrok.log &
-          sleep 10
+          tmux new-session -d "ngrok tcp 22 --region ap"
+          sleep 15
           echo "==== NGROK LINK ===="
-          cat ngrok.log | grep -o "tcp://[0-9a-zA-Z\.:\-]*"
+          curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
           echo "===================="
           
       - name: Keep job alive
