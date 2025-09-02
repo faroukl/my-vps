@@ -1,28 +1,31 @@
-name: VPS Ubuntu Free
+name: VPS-Ubuntu
 
-on:
-  workflow_dispatch:
+on: 
+  workflow_dispatch:   # Cho phép bấm nút Run workflow thủ công
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Cài tmate
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y tmate
+      - name: Cập nhật hệ thống
+        run: |
+          sudo apt update -y
+          sudo apt upgrade -y
 
-    - name: Tạo VPS qua tmate
-      run: |
-        # tạo session chạy ngầm
-        tmate -S /tmp/tmate.sock new-session -d
-        # đợi session sẵn sàng
-        tmate -S /tmp/tmate.sock wait tmate-ready
-        # in ra SSH + Web URL để kết nối
-        echo "===== SSH command ====="
-        tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
-        echo "===== Web URL ====="
-        tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
-        # giữ VPS chạy vô hạn (max 6h cho free)
-        sleep infinity
+      - name: Cài tmate
+        run: |
+          sudo apt install -y tmate
+
+      - name: Tạo session tmate
+        run: |
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+          echo "===== SSH command ====="
+          tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}'
+          echo "===== Web URL ====="
+          tmate -S /tmp/tmate.sock display -p '#{tmate_web}'
+
+      - name: Keep alive
+        run: |
+          echo "Giữ VPS sống, nhấn Stop workflow để tắt."
+          while true; do sleep 30; done
