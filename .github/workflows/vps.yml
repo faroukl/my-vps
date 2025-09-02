@@ -1,27 +1,37 @@
-name: VPS FullSpeed
+name: VPS-Ubuntu-CF
 
 on:
   workflow_dispatch:
 
 jobs:
-  vps:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # tối đa 6h
+    timeout-minutes: 360   # tối đa 6 giờ
 
     steps:
-      - name: Cài đặt tmate và tạo session
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y tmate
-          tmate -S /tmp/tmate.sock new-session -d "bash -l"
-          tmate -S /tmp/tmate.sock wait tmate-ready
-          echo "SSH: $(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')" | tee -a $GITHUB_STEP_SUMMARY
-          echo "WEB: $(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')" | tee -a $GITHUB_STEP_SUMMARY
-          echo ">>> VPS sẽ chạy liên tục trong 360 phút (6h)."
+    - name: Cài SSH server & user
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openssh-server
+        sudo service ssh start
+        sudo useradd -m vps -s /bin/bash
+        echo 'vps:vpspass' | sudo chpasswd
+        echo "PermitRootLogin yes" | sudo tee -a /etc/ssh/sshd_config
+        sudo service ssh restart
 
-      - name: Giữ VPS online
-        run: |
-          while true; do
-            echo ">> VPS vẫn chạy... $(date)"
-            sleep 300
-          done
+    - name: Cài đặt cloudflared
+      run: |
+        wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+        sudo dpkg -i cloudflared-linux-amd64.deb
+
+    - name: Chạy tunnel & giữ VPS
+      run: |
+        # Tạo tunnel TCP cho SSH
+        cloudflared tunnel --url tcp://localhost:22 > tunnel.log 2>&1 &
+        sleep 10
+        echo "==== Thông tin tunnel ===="
+        grep -o "tcp://[0-9a-zA-Z.:]*" tunnel.log || true
+        echo "=========================="
+
+        # Giữ job sống tới khi hết 6h
+        tail -f /dev/null
