@@ -27,7 +27,7 @@ jobs:
     - name: Chạy tunnel & giữ VPS
       run: |
         # Tạo tunnel TCP cho SSH
-        cloudflared tunnel --url tcp://localhost:22 > tunnel.log 2>&1 &
+        cloudflared tunnel --no-autoupdate --url tcp://localhost:22 > tunnel.log 2>&1 &
         sleep 10
         echo "==== Thông tin tunnel ===="
         grep -o "tcp://[0-9a-zA-Z.:]*" tunnel.log || true
